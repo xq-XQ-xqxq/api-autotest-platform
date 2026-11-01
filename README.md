@@ -1,114 +1,65 @@
 # 接口自动化测试平台 + AI 用例生成
 
-基于 **pytest + requests** 的分层接口自动化测试框架，接入 **Allure** 可视化报告与 **Jenkins** 持续集成，并用**大模型 API** 生成测试用例草稿，人工审核后入库，量化对比 AI 与人工编写的**覆盖率、遗漏率与效率**。
+自己做的一个测试开发练习项目。用 pytest + requests 搭了一套接口自动化框架，挂了 Allure 报告和 Jenkins，后面又加了个大模型生成用例的功能，顺便对比了一下 AI 写用例和人写用例的效率差距。
 
-## 功能特性
+框架分了五层：配置、接口、用例、数据、工具。主要想法是接口变了只改 api 那一层，加用例只改 YAML 数据，不用动代码。目前有 36 条用例，覆盖登录、增删改查、参数校验和越权（垂直越权和水平越权都有）。项目里自带一个 Flask 写的被测系统（sut/app.py），跑 pytest 会自动拉起来，不用手动启服务。
 
-- **分层框架**：配置 / 接口 / 用例 / 数据 / 工具 五层解耦，接口变更只需改 `api/` 层
-- **36 条用例**：覆盖登录、增删改查（CRUD）、参数校验（等价类/边界值）、权限越权（垂直/水平）
-- **数据驱动**：测试数据放 YAML，加用例 = 加数据，零代码改动
-- **Allure 报告**：每条用例带步骤、请求/响应原文附件，失败可定位到具体请求
-- **环境自举**：`pytest` 一跑自动拉起被测服务，跑完自动关闭，无需人工干预
-- **CI 集成**：Jenkinsfile 定时回归 + 提交触发 + 钉钉构建后通知
-- **AI 用例生成**：大模型按接口文档生成草稿 → 人工审核（接受/拒绝/编辑/补充）→ 入库 → 输出覆盖率/遗漏率/效率三方对比报告
+## 怎么跑起来
 
-## 环境要求
-
-| 依赖 | 版本 | 说明 |
-|---|---|---|
-| Python | >= 3.10 | 必需 |
-| Allure 命令行 | >= 2.x | 可选，仅生成网页报告需要 |
-| 大模型 API Key | - | 可选，仅 AI 用例生成需要（DeepSeek / OpenAI 兼容协议均可） |
-
-## 快速开始（5 分钟跑起来）
+环境：Python 3.10 以上就行。看报告需要额外装 allure 命令行，AI 功能需要一个大模型的 key，这两个都是可选的。
 
 ```bash
-# 1. 克隆项目
-git clone <仓库地址>
-cd <项目目录>
-
-# 2. 安装依赖
+git clone https://github.com/xq-XQ-xqxq/api-autotest-platform.git
+cd api-autotest-platform
 pip install -r requirements.txt
-
-# 3. 跑全部用例（被测服务会自动拉起，无需手动启动）
 python -m pytest
 ```
 
-看到 `36 passed` 就说明框架跑通了。
+看到 36 passed 就跑通了。
 
-### 生成并查看 Allure 报告
+### 看 Allure 报告
 
 ```bash
 python run.py --open
 ```
 
-跑完测试后自动生成 HTML 报告并在浏览器打开。若提示未安装 allure 命令行工具：
+没装 allure 的话先装一下（有 npm 的话 `npm install -g allure-commandline` 最省事，Windows 也可以 `scoop install allure`）。报告里能看到每条用例的请求和响应原文，失败的时候排查很方便。
 
-```bash
-# 方式一：npm（推荐，跨平台）
-npm install -g allure-commandline
+### AI 生成用例（可选）
 
-# 方式二：scoop（Windows）
-scoop install allure
-```
-
-也可以手动两步：
-
-```bash
-python -m pytest                      # 生成原始数据到 reports/allure-results
-allure serve reports/allure-results   # 直接起本地服务看报告
-```
-
-## AI 用例生成（可选）
-
-```bash
-# Windows PowerShell
+```powershell
 $env:LLM_API_KEY="你的key"
 $env:LLM_BASE_URL="https://api.deepseek.com"
 $env:LLM_MODEL="deepseek-chat"
 python -m ai_case_gen.main
 ```
 
-流程：读取 `ai_case_gen/api_doc_example.md` → 大模型生成用例草稿 → 终端逐条审核（`y` 接受 / `n` 拒绝 / `e` 编辑 / `a` 新增 / `s` 跳过）→ 入库 `data/ai_generated_cases.yaml` → 打印 **AI 草稿 / AI 采纳 / 人工编写** 三方对比表并写入 `reports/ai_vs_manual_report.json`。
+跑起来之后它会读接口文档，让大模型生成一批用例草稿，然后在终端里一条条让你审（y 接受，n 拒绝，e 编辑，a 自己补一条，s 跳过后面的）。审完会打印一个对比表：AI 草稿、AI 采纳、人工编写三方的覆盖率、遗漏率和单条耗时。
 
-> Key 只走环境变量，不会写入任何文件，请放心使用；也不要把 key 提交到仓库。
+用下来感觉 AI 想得挺全的，边界值覆盖比我自己写的还细，但预期结果经常写错（比如该 403 的它写 200），所以人工过一遍是必须的。key 只从环境变量读，不会写进任何文件。
 
 ## 目录结构
 
 ```
-├── config/config.yaml        # 【配置层】环境地址、测试账号
-├── api/                      # 【接口层】每个接口封装成一个方法
-│   ├── base_api.py           #   基类：加载配置、持有请求句柄
-│   ├── login_api.py          #   登录接口
-│   └── user_api.py           #   用户增删改查
-├── testcases/                # 【用例层】36 条 pytest 用例
-│   ├── test_login.py         #   登录（含 SQL 注入）
-│   ├── test_user_crud.py     #   增删改查（含业务闭环）
-│   ├── test_param_validate.py#   参数校验（数据驱动）
-│   └── test_permission.py    #   权限越权（垂直/水平）
-├── data/                     # 【数据层】YAML 测试数据 + 场景基线
-├── common/                   # 工具层：请求封装、日志、YAML 读取
-├── ai_case_gen/              # AI 用例生成模块
-│   ├── case_generator.py     #   调用大模型生成草稿
-│   ├── review_workflow.py    #   人工审核入库（y/n/e/a/s）
-│   ├── coverage.py           #   覆盖率/遗漏率计算
-│   └── main.py               #   主流程 + 三方对比报告
-├── sut/app.py                # 被测系统（Flask 演示服务，练习用）
-├── conftest.py               # fixture：自动拉起服务、token、数据清理
-├── ci_notify.py              # 构建后钉钉通知（Jenkins 调用）
-├── Jenkinsfile               # CI 流水线：定时回归 + 通知
-├── run.py                    # 一键执行 + 生成 Allure 报告
-└── pytest.ini                # pytest 配置（用例发现规则、报告输出）
+├── config/           配置：环境地址、账号
+├── api/              接口封装：login_api、user_api
+├── testcases/        用例：登录、CRUD、参数校验、越权
+├── data/             测试数据（YAML）和场景基线
+├── common/           请求封装、日志、读 YAML
+├── ai_case_gen/      AI 用例生成 + 审核 + 覆盖率对比
+├── sut/app.py        被测系统（Flask，练习用）
+├── conftest.py       fixture：启服务、登录拿 token、数据清理
+├── ci_notify.py      Jenkins 构建后发钉钉通知
+├── Jenkinsfile       流水线：定时跑 + 提交触发
+└── run.py            跑测试 + 出报告
 ```
 
-## 如何扩展用例（数据驱动示例）
+## 加用例不用写代码
 
-新增场景不需要写 Python，直接在 `data/` 的 YAML 里加一段：
+测试数据都在 `data/` 下的 YAML 里，比如要加一个登录场景，在 `data/login_data.yaml` 里补一段就行：
 
 ```yaml
-# data/login_data.yaml
-login_cases:
-  - title: 新场景：超长用户名登录
+  - title: 超长用户名登录
     username: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     password: "Admin@123"
     expected_status: 401
@@ -116,29 +67,18 @@ login_cases:
     expected_msg: "用户名或密码错误"
 ```
 
-保存后重跑 `python -m pytest`，用例数自动 +1。
+重跑 pytest 用例数就 +1 了。
 
-## 持续集成（Jenkins）
+## Jenkins
 
-`Jenkinsfile` 已配置好声明式流水线：
+Jenkinsfile 里配了每天凌晨定时跑，同时每 10 分钟轮询代码有没有新提交，有就自动回归。跑完生成 Allure 报告，成功失败都会调 `ci_notify.py` 发钉钉通知（webhook 地址走 Jenkins 的环境变量 `DINGTALK_WEBHOOK`，不配就跳过，不会卡住构建）。
 
-- `triggers`：每天凌晨定时执行 + 每 10 分钟轮询代码变更（提交即回归）
-- `stages`：安装依赖 → 执行 pytest
-- `post`：生成 Allure 报告（allure 插件）→ success/failure 调用 `python ci_notify.py` 发钉钉通知
+## 接真实项目
 
-钉钉机器人地址通过 Jenkins 环境变量 `DINGTALK_WEBHOOK` 注入；未配置时脚本优雅跳过，不阻塞构建。
+sut 只是个练习靶子。真要用到自己项目上，改 `config/config.yaml` 里的 `base_url` 和账号就行，其他代码不用动。接口整理过程我是用 Charles 抓包做的，记录在 `docs/charles_capture_notes.md`。
 
-## 被测系统说明
+## 踩过的坑
 
-`sut/app.py` 是一个 Flask 演示服务（内存数据库，重启即重置），提供登录 + 用户管理接口，用于练习。**接入真实被测系统时**，只需修改 `config/config.yaml` 的 `base_url` 和账号，框架代码零改动。
-
-## 常见问题
-
-**Q: 跑 pytest 报错端口被占用？**
-A: 说明已有服务占用 5000 端口。要么关掉它，要么改 `config/config.yaml` 的 `base_url` 指向其他端口。
-
-**Q: Allure 报告打不开？**
-A: 原始数据在 `reports/allure-results`，执行 `allure serve reports/allure-results` 起本地服务查看。
-
-**Q: AI 生成报错 401？**
-A: 检查 `LLM_API_KEY` 是否有效、`LLM_BASE_URL` 是否带 `https://`。
+- 端口被占用：5000 被别的程序占了，关掉或者改 config 里的地址
+- allure 报告打不开：数据在 reports/allure-results，跑 `allure serve reports/allure-results`
+- AI 调不通：先确认 key 没过期，base_url 别漏了 https://
