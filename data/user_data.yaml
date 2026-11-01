@@ -1,0 +1,61 @@
+# 创建用户接口 - 参数校验测试数据
+# payload 中 "<random>" 会在用例执行时替换为随机用户名，保证重复运行不冲突
+create_user_cases:
+  - title: 合法参数创建用户成功
+    payload: {username: "<random>", password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 200
+    expected_code: 0
+
+  - title: 缺少username必填字段
+    payload: {password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "缺少必填字段"
+
+  - title: 缺少password必填字段
+    payload: {username: "<random>", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "缺少必填字段"
+
+  - title: 缺少nickname必填字段
+    payload: {username: "<random>", password: "Auto@12345"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "缺少必填字段"
+
+  - title: username长度小于4位
+    payload: {username: "abc", password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "username"
+
+  - title: username长度大于20位
+    payload: {username: "a123456789012345678901", password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "username"
+
+  - title: username含特殊字符
+    payload: {username: "abc$%^", password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "username"
+
+  - title: password长度小于6位
+    payload: {username: "<random>", password: "Abc@1", nickname: "自动化用户"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "password"
+
+  - title: nickname长度大于30位
+    payload: {username: "<random>", password: "Auto@12345", nickname: "昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称昵称"}
+    expected_status: 400
+    expected_code: 400
+    expected_msg: "nickname"
+
+  - title: 用户名重复创建失败
+    payload: {username: "admin", password: "Auto@12345", nickname: "自动化用户"}
+    expected_status: 409
+    expected_code: 409
+    expected_msg: "已存在"

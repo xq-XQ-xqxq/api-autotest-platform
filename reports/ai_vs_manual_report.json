@@ -1,0 +1,37 @@
+{
+  "checklist_total": 31,
+  "ai_draft": {
+    "case_count": 56,
+    "generate_seconds": 39.8,
+    "seconds_per_case": 0.71,
+    "coverage": 0.9677,
+    "miss_rate": 0.0323,
+    "missed_ids": [
+      "user_list_success"
+    ]
+  },
+  "ai_accepted": {
+    "case_count": 60,
+    "accepted_from_draft": 56,
+    "added_by_human": 4,
+    "rejected": 0,
+    "reject_rate": 0.0,
+    "review_seconds": 1680,
+    "review_seconds_estimated": true,
+    "seconds_per_case": 28.66,
+    "coverage": 1.0,
+    "miss_rate": 0.0,
+    "missed": []
+  },
+  "manual_baseline": {
+    "case_count": 36,
+    "estimated_minutes_per_case": 5,
+    "seconds_per_case": 300,
+    "coverage": 1.0,
+    "miss_rate": 0.0
+  },
+  "efficiency": {
+    "improvement_by_generation": 300.0,
+    "improvement_by_combined": 10.5
+  }
+}

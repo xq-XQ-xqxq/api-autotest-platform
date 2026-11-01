@@ -1,0 +1,189 @@
+# 应覆盖场景基线（按接口 × 场景类型列出）
+# 用途：计算 AI 生成用例与人工编写用例的「覆盖率」与「遗漏率」
+# 每个场景的 keywords 会在用例文本中做包含匹配，命中即视为被覆盖
+checklist:
+  - id: login_success
+    endpoint: login
+    category: 正常
+    keywords: ["登录成功", "正确", "success", "token"]
+    description: 正确账号密码登录成功并返回 token
+
+  - id: login_wrong_password
+    endpoint: login
+    category: 异常
+    keywords: ["密码错误", "密码错"]
+    description: 密码错误登录失败
+
+  - id: login_user_not_exist
+    endpoint: login
+    category: 异常
+    keywords: ["不存在"]
+    description: 用户名不存在登录失败
+
+  - id: login_empty_username
+    endpoint: login
+    category: 参数校验
+    keywords: ["用户名", "为空"]
+    description: 用户名为空被拦截
+
+  - id: login_empty_password
+    endpoint: login
+    category: 参数校验
+    keywords: ["密码", "为空"]
+    description: 密码为空被拦截
+
+  - id: login_sql_injection
+    endpoint: login
+    category: 安全
+    keywords: ["sql", "注入", "inject"]
+    description: SQL 注入被拒绝
+
+  - id: user_create_success
+    endpoint: create_user
+    category: 正常
+    keywords: ["创建", "新增", "合法参数"]
+    description: 合法参数创建用户成功
+
+  - id: user_create_missing_username
+    endpoint: create_user
+    category: 参数校验
+    keywords: ["缺少", "username", "缺少必填"]
+    description: 缺少 username 被拦截
+
+  - id: user_create_missing_password
+    endpoint: create_user
+    category: 参数校验
+    keywords: ["缺少", "password", "缺少必填"]
+    description: 缺少 password 被拦截
+
+  - id: user_create_missing_nickname
+    endpoint: create_user
+    category: 参数校验
+    keywords: ["缺少", "nickname", "缺少必填"]
+    description: 缺少 nickname 被拦截
+
+  - id: user_create_username_short
+    endpoint: create_user
+    category: 边界
+    keywords: ["小于", "短", "4位"]
+    description: username 长度小于 4 位被拦截
+
+  - id: user_create_username_long
+    endpoint: create_user
+    category: 边界
+    keywords: ["大于", "长", "20位"]
+    description: username 长度大于 20 位被拦截
+
+  - id: user_create_username_special
+    endpoint: create_user
+    category: 参数校验
+    keywords: ["特殊字符", "特殊"]
+    description: username 含特殊字符被拦截
+
+  - id: user_create_password_short
+    endpoint: create_user
+    category: 边界
+    keywords: ["password", "小于", "6位"]
+    description: password 长度小于 6 位被拦截
+
+  - id: user_create_nickname_long
+    endpoint: create_user
+    category: 边界
+    keywords: ["nickname", "大于", "30位"]
+    description: nickname 长度大于 30 位被拦截
+
+  - id: user_create_duplicate
+    endpoint: create_user
+    category: 异常
+    keywords: ["重复", "已存在", "重名"]
+    description: 用户名重复创建失败
+
+  - id: user_get_success
+    endpoint: get_user
+    category: 正常
+    keywords: ["查询存在", "查询成功", "查询任意用户"]
+    description: 查询存在的用户成功
+
+  - id: user_get_not_exist
+    endpoint: get_user
+    category: 异常
+    keywords: ["查询不存在", "404"]
+    description: 查询不存在的用户返回 404
+
+  - id: user_update_success
+    endpoint: update_user
+    category: 正常
+    keywords: ["修改存在", "修改成功", "修改任意用户", "修改自己昵称成功"]
+    description: 修改存在的用户成功
+
+  - id: user_update_not_exist
+    endpoint: update_user
+    category: 异常
+    keywords: ["修改不存在", "404"]
+    description: 修改不存在的用户返回 404
+
+  - id: user_delete_success
+    endpoint: delete_user
+    category: 正常
+    keywords: ["删除存在", "删除成功", "管理员删除用户成功"]
+    description: 删除存在的用户成功
+
+  - id: user_delete_not_exist
+    endpoint: delete_user
+    category: 异常
+    keywords: ["删除不存在", "404"]
+    description: 删除不存在的用户返回 404
+
+  - id: user_list_success
+    endpoint: list_users
+    category: 正常
+    keywords: ["列表", "查询用户列表"]
+    description: 管理员查询用户列表成功
+
+  - id: auth_no_token
+    endpoint: auth
+    category: 鉴权
+    keywords: ["未携带", "无token", "401"]
+    description: 未携带 token 访问返回 401
+
+  - id: auth_invalid_token
+    endpoint: auth
+    category: 鉴权
+    keywords: ["无效", "invalid", "401"]
+    description: 无效 token 访问返回 401
+
+  - id: auth_normal_create
+    endpoint: vertical
+    category: 垂直越权
+    keywords: ["普通用户", "创建", "403"]
+    description: 普通用户创建用户被拒绝
+
+  - id: auth_normal_delete
+    endpoint: vertical
+    category: 垂直越权
+    keywords: ["普通用户", "删除", "403"]
+    description: 普通用户删除用户被拒绝
+
+  - id: auth_normal_list
+    endpoint: vertical
+    category: 垂直越权
+    keywords: ["普通用户", "列表", "403"]
+    description: 普通用户查询列表被拒绝
+
+  - id: auth_normal_escalate
+    endpoint: vertical
+    category: 垂直越权
+    keywords: ["提升", "角色", "admin", "403"]
+    description: 普通用户尝试提权被拒绝
+
+  - id: auth_horizontal_query
+    endpoint: horizontal
+    category: 水平越权
+    keywords: ["查询他人", "水平", "403"]
+    description: 普通用户查询他人信息被拒绝
+
+  - id: auth_horizontal_update
+    endpoint: horizontal
+    category: 水平越权
+    keywords: ["修改他人", "水平", "403"]
+    description: 普通用户修改他人信息被拒绝

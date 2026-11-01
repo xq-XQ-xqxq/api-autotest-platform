@@ -1,0 +1,281 @@
+cases:
+- title: 正确账号密码登录成功
+  priority: P0
+  precondition: 用户已注册且账号状态正常
+  steps: 调用 POST /api/login，传入正确的 username 和 password
+  expected: 返回 200，code 为 0，msg 为 success，data 中包含 token、user_id、role
+- title: 用户名不存在登录失败
+  priority: P0
+  precondition: 用户名未注册
+  steps: 调用 POST /api/login，传入不存在的 username 和任意 password
+  expected: 返回 401，code 为 401，msg 为 用户名或密码错误
+- title: 密码错误登录失败
+  priority: P0
+  precondition: 用户已注册
+  steps: 调用 POST /api/login，传入正确 username 和错误 password
+  expected: 返回 401，code 为 401，msg 为 用户名或密码错误
+- title: 缺少用户名登录失败
+  priority: P1
+  precondition: 无
+  steps: 调用 POST /api/login，请求体仅包含 password
+  expected: 返回 400，code 为 400，msg 为 用户名和密码不能为空
+- title: 缺少密码登录失败
+  priority: P1
+  precondition: 无
+  steps: 调用 POST /api/login，请求体仅包含 username
+  expected: 返回 400，code 为 400，msg 为 用户名和密码不能为空
+- title: 用户名和密码均为空登录失败
+  priority: P1
+  precondition: 无
+  steps: 调用 POST /api/login，请求体为空 JSON
+  expected: 返回 400，code 为 400，msg 为 用户名和密码不能为空
+- title: 用户名字段类型错误登录失败
+  priority: P2
+  precondition: 无
+  steps: 调用 POST /api/login，username 传入数字类型，password 传入正确字符串
+  expected: 返回 400，参数校验失败提示
+- title: 密码字段类型错误登录失败
+  priority: P2
+  precondition: 无
+  steps: 调用 POST /api/login，username 传入正确字符串，password 传入数组类型
+  expected: 返回 400，参数校验失败提示
+- title: 用户名包含特殊字符登录失败
+  priority: P2
+  precondition: 无
+  steps: 调用 POST /api/login，username 传入包含 SQL 注入或特殊字符的字符串
+  expected: 返回 401 或 400，不泄露系统信息，不产生注入风险
+- title: 超长用户名登录失败
+  priority: P2
+  precondition: 无
+  steps: 调用 POST /api/login，username 传入 1000 位字符串
+  expected: 返回 400 或 401，系统正常处理不报错
+- title: 管理员正确创建用户成功
+  priority: P0
+  precondition: 管理员已登录并持有有效 token
+  steps: 调用 POST /api/users，携带管理员 token，传入合法 username、password、nickname
+  expected: 返回 200，code 为 0，data 中包含 user_id
+- title: 未登录创建用户失败
+  priority: P0
+  precondition: 无 token
+  steps: 调用 POST /api/users，不携带 Authorization 头，传入合法参数
+  expected: 返回 401
+- title: 普通用户创建用户失败
+  priority: P0
+  precondition: 普通用户已登录并持有有效 token
+  steps: 调用 POST /api/users，携带普通用户 token，传入合法参数
+  expected: 返回 403
+- title: 无效 token 创建用户失败
+  priority: P1
+  precondition: 无
+  steps: 调用 POST /api/users，携带伪造或过期 token，传入合法参数
+  expected: 返回 401
+- title: 创建用户缺少用户名失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，请求体缺少 username
+  expected: 返回 400
+- title: 创建用户缺少密码失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，请求体缺少 password
+  expected: 返回 400
+- title: 创建用户缺少昵称失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，请求体缺少 nickname
+  expected: 返回 400
+- title: 用户名长度小于 4 位创建失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，username 传入 3 位字符串
+  expected: 返回 400
+- title: 用户名长度等于 4 位创建成功
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，username 传入 4 位合法字符串
+  expected: 返回 200，code 为 0
+- title: 用户名长度等于 20 位创建成功
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，username 传入 20 位合法字符串
+  expected: 返回 200，code 为 0
+- title: 用户名长度大于 20 位创建失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，username 传入 21 位字符串
+  expected: 返回 400
+- title: 用户名包含非法字符创建失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，username 传入包含中文或特殊符号的字符串
+  expected: 返回 400
+- title: 用户名重复创建失败
+  priority: P0
+  precondition: 管理员已登录，已存在同名用户
+  steps: 调用 POST /api/users，username 传入已存在的用户名
+  expected: 返回 409
+- title: 密码长度小于 6 位创建失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，password 传入 5 位字符串
+  expected: 返回 400
+- title: 密码长度等于 6 位创建成功
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，password 传入 6 位字符串
+  expected: 返回 200，code 为 0
+- title: 密码长度等于 32 位创建成功
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，password 传入 32 位字符串
+  expected: 返回 200，code 为 0
+- title: 密码长度大于 32 位创建失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，password 传入 33 位字符串
+  expected: 返回 400
+- title: 昵称长度为 1 位创建成功
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，nickname 传入 1 位字符串
+  expected: 返回 200，code 为 0
+- title: 昵称长度为 30 位创建成功
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，nickname 传入 30 位字符串
+  expected: 返回 200，code 为 0
+- title: 昵称长度大于 30 位创建失败
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，nickname 传入 31 位字符串
+  expected: 返回 400
+- title: 昵称为空创建失败
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 POST /api/users，nickname 传入空字符串
+  expected: 返回 400
+- title: 管理员查询任意用户成功
+  priority: P0
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 GET /api/users/{user_id}，携带管理员 token，user_id 为其他用户
+  expected: 返回 200，code 为 0，data 包含 user_id、username、nickname、role
+- title: 普通用户查询自己成功
+  priority: P0
+  precondition: 普通用户已登录
+  steps: 调用 GET /api/users/{user_id}，携带普通用户 token，user_id 为自身
+  expected: 返回 200，code 为 0，data 包含自身信息
+- title: 普通用户查询他人失败
+  priority: P0
+  precondition: 普通用户已登录，存在其他用户
+  steps: 调用 GET /api/users/{user_id}，携带普通用户 token，user_id 为其他用户
+  expected: 返回 403
+- title: 未登录查询用户失败
+  priority: P0
+  precondition: 无 token
+  steps: 调用 GET /api/users/{user_id}，不携带 Authorization 头
+  expected: 返回 401
+- title: 查询不存在的用户失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 GET /api/users/{user_id}，user_id 传入不存在的 ID
+  expected: 返回 404
+- title: 查询用户 user_id 格式非法失败
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 GET /api/users/{user_id}，user_id 传入非法格式字符串
+  expected: 返回 400 或 404
+- title: 管理员修改任意用户昵称成功
+  priority: P0
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，携带管理员 token，传入合法 nickname
+  expected: 返回 200，code 为 0
+- title: 管理员修改用户角色成功
+  priority: P0
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，携带管理员 token，传入合法 role
+  expected: 返回 200，code 为 0
+- title: 普通用户修改自己昵称成功
+  priority: P0
+  precondition: 普通用户已登录
+  steps: 调用 PUT /api/users/{user_id}，携带普通用户 token，user_id 为自身，传入合法 nickname
+  expected: 返回 200，code 为 0
+- title: 普通用户修改自己密码成功
+  priority: P0
+  precondition: 普通用户已登录
+  steps: 调用 PUT /api/users/{user_id}，携带普通用户 token，user_id 为自身，传入合法 password
+  expected: 返回 200，code 为 0
+- title: 普通用户修改他人信息失败
+  priority: P0
+  precondition: 普通用户已登录，存在其他用户
+  steps: 调用 PUT /api/users/{user_id}，携带普通用户 token，user_id 为其他用户，传入合法 nickname
+  expected: 返回 403
+- title: 普通用户修改自己角色失败
+  priority: P0
+  precondition: 普通用户已登录
+  steps: 调用 PUT /api/users/{user_id}，携带普通用户 token，user_id 为自身，传入 role 字段
+  expected: 返回 403 或忽略 role 字段，角色不变
+- title: 未登录修改用户失败
+  priority: P0
+  precondition: 无 token
+  steps: 调用 PUT /api/users/{user_id}，不携带 Authorization 头，传入合法 nickname
+  expected: 返回 401
+- title: 修改不存在用户失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 PUT /api/users/{user_id}，user_id 传入不存在的 ID，传入合法 nickname
+  expected: 返回 404
+- title: 修改昵称长度大于 30 位失败
+  priority: P1
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，传入 31 位 nickname
+  expected: 返回 400
+- title: 修改密码长度小于 6 位失败
+  priority: P1
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，传入 5 位 password
+  expected: 返回 400
+- title: 修改密码长度大于 32 位失败
+  priority: P1
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，传入 33 位 password
+  expected: 返回 400
+- title: 修改用户传入空请求体成功
+  priority: P2
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，传入空 JSON 请求体
+  expected: 返回 200，code 为 0，用户信息不变
+- title: 修改昵称包含特殊字符成功
+  priority: P2
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 PUT /api/users/{user_id}，nickname 传入包含特殊字符的合法长度字符串
+  expected: 返回 200，code 为 0
+- title: 管理员删除用户成功
+  priority: P0
+  precondition: 管理员已登录，目标用户存在
+  steps: 调用 DELETE /api/users/{user_id}，携带管理员 token
+  expected: 返回 200，code 为 0，再次查询该用户返回 404
+- title: 普通用户删除用户失败
+  priority: P0
+  precondition: 普通用户已登录
+  steps: 调用 DELETE /api/users/{user_id}，携带普通用户 token
+  expected: 返回 403
+- title: 未登录删除用户失败
+  priority: P0
+  precondition: 无 token
+  steps: 调用 DELETE /api/users/{user_id}，不携带 Authorization 头
+  expected: 返回 401
+- title: 删除不存在用户失败
+  priority: P1
+  precondition: 管理员已登录
+  steps: 调用 DELETE /api/users/{user_id}，user_id 传入不存在的 ID
+  expected: 返回 404
+- title: 删除用户 user_id 格式非法失败
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 DELETE /api/users/{user_id}，user_id 传入非法格式字符串
+  expected: 返回 400 或 404
+- title: 管理员删除自己账号
+  priority: P2
+  precondition: 管理员已登录
+  steps: 调用 DELETE /api/users/{user_id}，user_id 为管理员自身
+  expected: 按业务规则返回 200 或 403，系统行为明确且不产生异常

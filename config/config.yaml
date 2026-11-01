@@ -1,0 +1,15 @@
+# 测试环境配置：切换被测系统只需修改 base_url
+env: test
+
+test:
+  base_url: "http://127.0.0.1:5000"
+  timeout: 10
+
+# 预置测试账号（与被测系统 sut/app.py 中一致）
+account:
+  admin:
+    username: "admin"
+    password: "Admin@123"
+  normal:
+    username: "test001"
+    password: "Test@123"
