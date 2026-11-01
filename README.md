@@ -1,12 +1,14 @@
 # 接口自动化测试平台 + AI 用例生成
 
-自己做的一个测试开发练习项目。用 pytest + requests 搭了一套接口自动化框架，挂了 Allure 报告和 Jenkins，后面又加了个大模型生成用例的功能，顺便对比了一下 AI 写用例和人写用例的效率差距。
+个人独立完成的测试开发项目：基于 pytest + requests 的分层接口自动化测试框架，集成 Allure 可视化报告与 Jenkins 持续集成，并通过大模型 API 生成测试用例草稿，人工审核入库后量化对比 AI 与人工编写的覆盖率、遗漏率与效率。
 
-框架分了五层：配置、接口、用例、数据、工具。主要想法是接口变了只改 api 那一层，加用例只改 YAML 数据，不用动代码。目前有 36 条用例，覆盖登录、增删改查、参数校验和越权（垂直越权和水平越权都有）。项目里自带一个 Flask 写的被测系统（sut/app.py），跑 pytest 会自动拉起来，不用手动启服务。
+框架按五层设计：配置 / 接口 / 用例 / 数据 / 工具。核心目标是解耦——接口变更只改 `api/` 层，新增场景只改 YAML 数据，测试代码保持稳定。当前共 36 条用例，覆盖登录、增删改查（CRUD）、参数校验（等价类划分 + 边界值分析）、权限越权（垂直越权与水平越权）。仓库内置一个 Flask 编写的被测系统（`sut/app.py`），执行 pytest 时由 `conftest.py` 自动拉起，测试结束自动回收，无需人工启停服务。
 
-## 怎么跑起来
+## 环境要求
 
-环境：Python 3.10 以上就行。看报告需要额外装 allure 命令行，AI 功能需要一个大模型的 key，这两个都是可选的。
+Python 3.10+ 即可。Allure 命令行工具和大模型 API Key 均为可选，分别对应报告生成和 AI 用例生成两个增强功能。
+
+## 快速开始
 
 ```bash
 git clone https://github.com/xq-XQ-xqxq/api-autotest-platform.git
@@ -15,17 +17,17 @@ pip install -r requirements.txt
 python -m pytest
 ```
 
-看到 36 passed 就跑通了。
+输出 `36 passed` 即框架运行正常。
 
-### 看 Allure 报告
+### 生成 Allure 报告
 
 ```bash
 python run.py --open
 ```
 
-没装 allure 的话先装一下（有 npm 的话 `npm install -g allure-commandline` 最省事，Windows 也可以 `scoop install allure`）。报告里能看到每条用例的请求和响应原文，失败的时候排查很方便。
+未安装 allure 命令行工具时，可用 `npm install -g allure-commandline`（跨平台）或 `scoop install allure`（Windows）。报告中每条用例附带测试步骤及请求/响应原文附件，失败用例可直接定位到具体请求。
 
-### AI 生成用例（可选）
+### AI 用例生成（可选）
 
 ```powershell
 $env:LLM_API_KEY="你的key"
@@ -34,29 +36,29 @@ $env:LLM_MODEL="deepseek-chat"
 python -m ai_case_gen.main
 ```
 
-跑起来之后它会读接口文档，让大模型生成一批用例草稿，然后在终端里一条条让你审（y 接受，n 拒绝，e 编辑，a 自己补一条，s 跳过后面的）。审完会打印一个对比表：AI 草稿、AI 采纳、人工编写三方的覆盖率、遗漏率和单条耗时。
+流程：读取接口文档 → 大模型生成用例草稿 → 终端逐条人工审核（`y` 接受 / `n` 拒绝 / `e` 编辑 / `a` 补充 / `s` 跳过剩余）→ 入库 → 输出 AI 草稿、AI 采纳、人工编写三方的覆盖率、遗漏率、单条耗时对比报告。
 
-用下来感觉 AI 想得挺全的，边界值覆盖比我自己写的还细，但预期结果经常写错（比如该 403 的它写 200），所以人工过一遍是必须的。key 只从环境变量读，不会写进任何文件。
+实测结论：AI 草稿的场景覆盖面较广，边界值设计甚至优于人工初稿，但部分用例的预期结果与接口真实行为不一致（例如将越权应返回的 403 误写为 200），属于典型的模型幻觉，因此人工审核是必要的质量关卡。API Key 仅通过环境变量读取，不写入任何文件。
 
 ## 目录结构
 
 ```
-├── config/           配置：环境地址、账号
-├── api/              接口封装：login_api、user_api
-├── testcases/        用例：登录、CRUD、参数校验、越权
-├── data/             测试数据（YAML）和场景基线
-├── common/           请求封装、日志、读 YAML
-├── ai_case_gen/      AI 用例生成 + 审核 + 覆盖率对比
-├── sut/app.py        被测系统（Flask，练习用）
-├── conftest.py       fixture：启服务、登录拿 token、数据清理
-├── ci_notify.py      Jenkins 构建后发钉钉通知
-├── Jenkinsfile       流水线：定时跑 + 提交触发
-└── run.py            跑测试 + 出报告
+├── config/           配置层：环境地址、测试账号
+├── api/              接口层：登录、用户管理的接口封装
+├── testcases/        用例层：登录、CRUD、参数校验、权限越权
+├── data/             数据层：YAML 测试数据 + 场景覆盖基线
+├── common/           工具层：requests 二次封装、日志、YAML 解析
+├── ai_case_gen/      AI 模块：用例生成、人工审核、覆盖率统计
+├── sut/app.py        被测系统（Flask 演示服务）
+├── conftest.py       pytest fixture：服务自举、token 注入、数据清理
+├── ci_notify.py      构建后钉钉通知脚本
+├── Jenkinsfile       声明式流水线：定时回归 + 提交触发
+└── run.py            一键执行测试并生成报告
 ```
 
-## 加用例不用写代码
+## 数据驱动：加用例不改代码
 
-测试数据都在 `data/` 下的 YAML 里，比如要加一个登录场景，在 `data/login_data.yaml` 里补一段就行：
+测试数据与测试代码分离，新增场景只需在 YAML 中追加数据。例如在 `data/login_data.yaml` 中：
 
 ```yaml
   - title: 超长用户名登录
@@ -67,18 +69,18 @@ python -m ai_case_gen.main
     expected_msg: "用户名或密码错误"
 ```
 
-重跑 pytest 用例数就 +1 了。
+重跑 pytest 即自动新增一条参数化用例。
 
-## Jenkins
+## 持续集成
 
-Jenkinsfile 里配了每天凌晨定时跑，同时每 10 分钟轮询代码有没有新提交，有就自动回归。跑完生成 Allure 报告，成功失败都会调 `ci_notify.py` 发钉钉通知（webhook 地址走 Jenkins 的环境变量 `DINGTALK_WEBHOOK`，不配就跳过，不会卡住构建）。
+`Jenkinsfile` 配置了声明式流水线：每天凌晨定时执行回归，同时每 10 分钟轮询代码变更（提交即回归）。构建完成后生成 Allure 报告，并调用 `ci_notify.py` 发送钉钉通知。Webhook 地址通过 Jenkins 环境变量 `DINGTALK_WEBHOOK` 注入，未配置时脚本自动跳过，不阻塞构建。
 
-## 接真实项目
+## 对接真实被测系统
 
-sut 只是个练习靶子。真要用到自己项目上，改 `config/config.yaml` 里的 `base_url` 和账号就行，其他代码不用动。接口整理过程我是用 Charles 抓包做的，记录在 `docs/charles_capture_notes.md`。
+`sut/` 仅是演示靶子。接入实际项目时，修改 `config/config.yaml` 中的 `base_url` 和账号即可，框架代码零改动。接口信息可先用 Charles 抓包整理，参考 `docs/charles_capture_notes.md`。
 
-## 踩过的坑
+## 常见问题
 
-- 端口被占用：5000 被别的程序占了，关掉或者改 config 里的地址
-- allure 报告打不开：数据在 reports/allure-results，跑 `allure serve reports/allure-results`
-- AI 调不通：先确认 key 没过期，base_url 别漏了 https://
+- **端口占用**：5000 端口被占用时，关闭占用进程或修改 `config/config.yaml` 中的 `base_url`
+- **报告无法打开**：原始数据在 `reports/allure-results`，执行 `allure serve reports/allure-results` 本地查看
+- **AI 调用 401**：检查 `LLM_API_KEY` 有效性及 `LLM_BASE_URL` 是否包含 `https://`
